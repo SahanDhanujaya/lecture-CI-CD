@@ -13,6 +13,12 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((error) => console.log(error));
 
+app.get("/", async (re, res) => {
+  const response = await fetch("https://jsonplaceholder.typicode.com/comments?limit=1")
+  const data = await response.json()
+  res.send(data)
+})
+
 const server = app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
 });
