@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_USERNAME = "dhanuxdev"
+        FRONTEND_IMAGE = "dhanuxdev/react-frontend"
+        BACKEND_IMAGE = "dhanuxdev/node-backend"
+    }
+
+    stages {
+
+        stage('SCM Checkout') {
+            steps {
+                retry(3) {
+                    git branch: 'main', url: 'https://github.com/SahanDhanujaya/lecture-CI-CD.git'
+                }
+            }
+        }
+
+        stage('Build Backend Image') {
+            steps {
+                dir('backend') {
+                    bat "docker build -t %DOCKERHUB_USERNAME%/node-backend:%BUILD_NUMBER% ."
+                }
+            }
+        }
+
+        stage('Build Frontend Image') {
+            steps {
+                dir('frontend') {
+                    bat "docker build -t %DOCKERHUB_USERNAME%/react-frontend:%BUILD_NUMBER% ."
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerhub-pwd', variable: 'dockerhub-password')]) {
+                    bat "docker login -u %DOCKERHUB_USERNAME% -p %dockerhub-password%"
+                }
+            }
+        }
+
+        stage('Push Backend Image') {
+            steps {
+                bat "docker push %DOCKERHUB_USERNAME%/node-backend:%BUILD_NUMBER%"
+            }
+        }
+
+        stage('Push Frontend Image') {
+            steps {
+                bat "docker push %DOCKERHUB_USERNAME%/react-frontend:%BUILD_NUMBER%"
+            }
+        }
+
+    }
+
+    post {
+        always {
+            bat 'docker logout'
+        }
+
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
